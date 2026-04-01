@@ -3,6 +3,7 @@ import { convertToTypeScript } from './converters/typescript'
 import { convertToGolang } from './converters/golang'
 import { convertToDart } from './converters/dart'
 import { convertToPayload } from './converters/payload'
+import { Analytics } from '@vercel/analytics/react'
 
 type Language = 'typescript' | 'golang' | 'dart' | 'payload'
 
@@ -207,6 +208,7 @@ export default function App() {
           2026
         </span>
       </footer>
+      <Analytics />
     </div>
   )
 }
