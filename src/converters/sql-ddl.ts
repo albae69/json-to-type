@@ -239,9 +239,7 @@ export function convertSqlToGolang(ddl: string): string {
     const fieldType =
       column.isNullable && !column.isPrimaryKey ? `*${goType}` : goType
     const fieldName = toPascalCase(column.name)
-    const tag = column.isPrimaryKey
-      ? ` \`db:"${column.name},pk"\``
-      : ` \`db:"${column.name}"\``
+    const tag = ` \`json:"${column.name}"\``
     lines.push(`  ${fieldName} ${fieldType}${tag}`)
   }
 
