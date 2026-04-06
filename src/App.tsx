@@ -3,9 +3,16 @@ import { convertToTypeScript } from './converters/typescript'
 import { convertToGolang } from './converters/golang'
 import { convertToDart } from './converters/dart'
 import { convertToPayload } from './converters/payload'
+import {
+  convertSqlToTypeScript,
+  convertSqlToGolang,
+  convertSqlToDart,
+  convertSqlToPayload,
+} from './converters/sql-ddl'
 import { Analytics } from '@vercel/analytics/react'
 
 type Language = 'typescript' | 'golang' | 'dart' | 'payload'
+type InputType = 'json' | 'sql'
 
 const TABS: { id: Language; label: string; badge: string }[] = [
   { id: 'typescript', label: 'TypeScript', badge: 'TS' },
@@ -31,6 +38,16 @@ const EXAMPLE_JSON = `{
   ]
 }`
 
+const EXAMPLE_SQL = `CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  age INT,
+  active BOOLEAN DEFAULT true,
+  created_at DATETIME,
+  updated_at TIMESTAMP
+)`
+
 function formatJson(str: string): string {
   try {
     return JSON.stringify(JSON.parse(str), null, 2)
@@ -42,6 +59,7 @@ function formatJson(str: string): string {
 export default function App() {
   const [input, setInput] = useState(EXAMPLE_JSON)
   const [activeTab, setActiveTab] = useState<Language>('typescript')
+  const [inputType, setInputType] = useState<InputType>('json')
   const [rootName, setRootName] = useState('Root')
   const [copied, setCopied] = useState(false)
 
@@ -49,25 +67,45 @@ export default function App() {
     if (!input.trim()) return { result: '', error: null }
     try {
       let result: string
-      switch (activeTab) {
-        case 'typescript':
-          result = convertToTypeScript(input, rootName)
-          break
-        case 'golang':
-          result = convertToGolang(input, rootName)
-          break
-        case 'dart':
-          result = convertToDart(input, rootName)
-          break
-        case 'payload':
-          result = convertToPayload(input)
-          break
+
+      if (inputType === 'sql') {
+        // Handle SQL DDL conversion
+        switch (activeTab) {
+          case 'typescript':
+            result = convertSqlToTypeScript(input)
+            break
+          case 'golang':
+            result = convertSqlToGolang(input)
+            break
+          case 'dart':
+            result = convertSqlToDart(input)
+            break
+          case 'payload':
+            result = convertSqlToPayload(input)
+            break
+        }
+      } else {
+        // Handle JSON conversion
+        switch (activeTab) {
+          case 'typescript':
+            result = convertToTypeScript(input, rootName)
+            break
+          case 'golang':
+            result = convertToGolang(input, rootName)
+            break
+          case 'dart':
+            result = convertToDart(input, rootName)
+            break
+          case 'payload':
+            result = convertToPayload(input)
+            break
+        }
       }
       return { result, error: null }
     } catch (e) {
       return { result: '', error: e instanceof Error ? e.message : String(e) }
     }
-  }, [input, activeTab, rootName])
+  }, [input, activeTab, rootName, inputType])
 
   const handleCopy = async () => {
     if (!result) return
@@ -85,7 +123,7 @@ export default function App() {
   }
 
   const handleLoadExample = () => {
-    setInput(EXAMPLE_JSON)
+    setInput(inputType === 'sql' ? EXAMPLE_SQL : EXAMPLE_JSON)
   }
 
   return (
@@ -102,25 +140,47 @@ export default function App() {
       <main className='main'>
         <div className='options-bar'>
           <div className='option-group'>
-            <label className='option-label' htmlFor='root-name'>
-              Root Name
+            <label className='option-label' htmlFor='input-type'>
+              Input Type
             </label>
-            <input
-              id='root-name'
+            <select
+              id='input-type'
               className='option-input'
-              value={rootName}
-              onChange={(e) => setRootName(e.target.value || 'Root')}
-              placeholder='Root'
-              spellCheck={false}
-            />
+              value={inputType}
+              onChange={(e) => {
+                const newType = e.target.value as InputType
+                setInputType(newType)
+                setInput(newType === 'sql' ? EXAMPLE_SQL : EXAMPLE_JSON)
+              }}
+            >
+              <option value='json'>JSON</option>
+              <option value='sql'>SQL DDL</option>
+            </select>
           </div>
+          {inputType === 'json' && (
+            <div className='option-group'>
+              <label className='option-label' htmlFor='root-name'>
+                Root Name
+              </label>
+              <input
+                id='root-name'
+                className='option-input'
+                value={rootName}
+                onChange={(e) => setRootName(e.target.value || 'Root')}
+                placeholder='Root'
+                spellCheck={false}
+              />
+            </div>
+          )}
         </div>
 
         <div className='panels'>
           {/* Input Panel */}
           <div className='panel'>
             <div className='panel-header'>
-              <span className='panel-title'>JSON Input</span>
+              <span className='panel-title'>
+                {inputType === 'sql' ? 'SQL DDL Input' : 'JSON Input'}
+              </span>
               <div className='panel-actions'>
                 <button className='btn btn-ghost' onClick={handleLoadExample}>
                   Example
@@ -140,7 +200,11 @@ export default function App() {
                 onChange={(e) => {
                   setInput(e.target.value)
                 }}
-                placeholder='Paste your JSON here...'
+                placeholder={
+                  inputType === 'sql'
+                    ? 'Paste your SQL DDL (CREATE TABLE) here...'
+                    : 'Paste your JSON here...'
+                }
                 spellCheck={false}
                 autoComplete='off'
               />
