@@ -6,9 +6,12 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue }
 
-/** Convert string to lowercase */
-function toLowercase(str: string): string {
-  return str.toLowerCase()
+/** Convert PascalCase to snake_case */
+function pascalToSnakeCase(str: string): string {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1_$2') // Insert underscore before uppercase letters that follow lowercase
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2') // Handle consecutive uppercase letters
+    .toLowerCase()
 }
 
 /** Replace every leaf value with its field name as a placeholder */
@@ -21,14 +24,14 @@ function toTemplate(value: JsonValue, key: string): JsonValue {
   if (typeof value === 'object') {
     const result: { [k: string]: JsonValue } = {}
     for (const [k, v] of Object.entries(value)) {
-      result[toLowercase(k)] = toTemplate(v, k)
+      result[pascalToSnakeCase(k)] = toTemplate(v, k)
     }
     return result
   }
-  // leaf → use the key name as placeholder value, cast to same type, lowercase
-  if (typeof value === 'number') return toLowercase(key)
-  if (typeof value === 'boolean') return toLowercase(key)
-  return toLowercase(key)
+  // leaf → use the key name as placeholder value, cast to same type, snake_case
+  if (typeof value === 'number') return pascalToSnakeCase(key)
+  if (typeof value === 'boolean') return pascalToSnakeCase(key)
+  return pascalToSnakeCase(key)
 }
 
 function buildTemplate(
@@ -39,7 +42,7 @@ function buildTemplate(
     for (const [k, v] of Object.entries(
       parsed as { [key: string]: JsonValue },
     )) {
-      result[toLowercase(k)] = toTemplate(v, k)
+      result[pascalToSnakeCase(k)] = toTemplate(v, k)
     }
     return result
   }
