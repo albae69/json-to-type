@@ -66,6 +66,8 @@ function buildClass(
   const fromJsonLines: string[] = []
   const toJsonLines: string[] = []
   const initLines: string[] = []
+  const copyWithParams: string[] = []
+  const copyWithAssignments: string[] = []
 
   for (const [key, value] of Object.entries(obj)) {
     const fieldName = toCamelCase(key)
@@ -73,9 +75,13 @@ function buildClass(
     const dartType = inferDartType(value, childTypeName, classes)
     const nullable = value === null ? '?' : ''
 
-    fields.push(`  ${dartType}${nullable} ${fieldName};`)
-    constructorParams.push(`    this.${fieldName},`)
+    fields.push(`  final ${dartType}${nullable} ${fieldName};`)
+    constructorParams.push(`    required this.${fieldName},`)
     initLines.push(`      ${fieldName}: ${defaultDartValue(value, dartType)},`)
+
+    // copyWith parameters and assignments
+    copyWithParams.push(`    ${dartType}${nullable}? ${fieldName},`)
+    copyWithAssignments.push(`      ${fieldName}: ${fieldName} ?? this.${fieldName},`)
 
     // fromJson
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
@@ -136,6 +142,12 @@ function buildClass(
     `  Map<String, dynamic> toJson() => {`,
     ...toJsonLines,
     `  };`,
+    '',
+    `  ${name} copyWith({`,
+    ...copyWithParams,
+    `  }) => ${name}(`,
+    ...copyWithAssignments,
+    `  );`,
     '}',
   ]
 
