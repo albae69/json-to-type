@@ -6,6 +6,11 @@ type JsonValue =
   | JsonValue[]
   | { [key: string]: JsonValue }
 
+/** Convert string to lowercase */
+function toLowercase(str: string): string {
+  return str.toLowerCase()
+}
+
 /** Replace every leaf value with its field name as a placeholder */
 function toTemplate(value: JsonValue, key: string): JsonValue {
   if (value === null) return null
@@ -16,14 +21,14 @@ function toTemplate(value: JsonValue, key: string): JsonValue {
   if (typeof value === 'object') {
     const result: { [k: string]: JsonValue } = {}
     for (const [k, v] of Object.entries(value)) {
-      result[k] = toTemplate(v, k)
+      result[toLowercase(k)] = toTemplate(v, k)
     }
     return result
   }
-  // leaf → use the key name as placeholder value, cast to same type
-  if (typeof value === 'number') return key
-  if (typeof value === 'boolean') return key
-  return key
+  // leaf → use the key name as placeholder value, cast to same type, lowercase
+  if (typeof value === 'number') return toLowercase(key)
+  if (typeof value === 'boolean') return toLowercase(key)
+  return toLowercase(key)
 }
 
 function buildTemplate(
@@ -34,7 +39,7 @@ function buildTemplate(
     for (const [k, v] of Object.entries(
       parsed as { [key: string]: JsonValue },
     )) {
-      result[k] = toTemplate(v, k)
+      result[toLowercase(k)] = toTemplate(v, k)
     }
     return result
   }
