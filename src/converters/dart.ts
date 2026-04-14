@@ -86,7 +86,7 @@ function buildClass(
     // fromJson
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       fromJsonLines.push(
-        `      ${fieldName}: ${dartType}.fromJson(json['${key}'] as Map<String, dynamic>),`,
+        `      ${fieldName}: json['${key}'] != null ? ${dartType}.fromJson(json['${key}'] as Map<String, dynamic>) : ${dartType}.init(),`,
       )
     } else if (
       Array.isArray(value) &&
@@ -97,7 +97,7 @@ function buildClass(
     ) {
       const elemType = toPascalCase(key)
       fromJsonLines.push(
-        `      ${fieldName}: (json['${key}'] as List<dynamic>).map((e) => ${elemType}.fromJson(e as Map<String, dynamic>)).toList(),`,
+        `      ${fieldName}: (json['${key}'] as List<dynamic>?)?.map((e) => ${elemType}.fromJson(e as Map<String, dynamic>)).toList() ?? [],`,
       )
     } else {
       fromJsonLines.push(
